@@ -1,123 +1,124 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Notificacoes = () => {
-  const [notificationType, setNotificationType] = useState('observacao');
-  const [email, setEmail] = useState('');
-  const [subject, setSubject] = useState('');
-  const [message, setMessage] = useState('');
-  const [sentNotifications, setSentNotifications] = useState([]);
+  const [mensagem, setMensagem] = useState('');
+  const [destinatarios, setDestinatarios] = useState('');
+  const [notificacoes, setNotificacoes] = useState([]);
+  const [status, setStatus] = useState('');
+  const navigate = useNavigate(); // Hook para navegação
 
-  const handleSendNotification = () => {
-    if (email && subject && message) {
-      const newNotification = {
-        email,
-        subject,
-        message,
-        type: notificationType,
-        date: new Date().toLocaleString(),
-      };
+  useEffect(() => {
+    const mockNotificacoes = [
+      { id: 1, mensagem: 'Lembre-se da prova amanhã!', destinatarios: 'Turma A', status: 'Enviada' },
+      { id: 2, mensagem: 'Tragam os projetos na sexta-feira.', destinatarios: 'Turma B', status: 'Lida' },
+    ];
+    setNotificacoes(mockNotificacoes);
+  }, []);
 
-      setSentNotifications([newNotification, ...sentNotifications]);
-      setEmail('');
-      setSubject('');
-      setMessage('');
-    } else {
-      alert('Por favor, preencha todos os campos.');
+  const handleEnviarNotificacao = () => {
+    if (!mensagem || !destinatarios) {
+      setStatus('Por favor, preencha todos os campos.');
+      return;
     }
+
+    const novaNotificacao = {
+      id: notificacoes.length + 1,
+      mensagem,
+      destinatarios,
+      status: 'Enviada',
+    };
+
+    setNotificacoes((prev) => [novaNotificacao, ...prev]);
+    setMensagem('');
+    setDestinatarios('');
+    setStatus('Notificação enviada com sucesso!');
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
-      {/* Título da página */}
-      <h3 className="text-3xl font-semibold text-[#4C1D95] mb-6">Notificações</h3>
+    <div className="p-6 bg-gray-100 min-h-screen font-poppins">
+      {/* Ícone de Voltar */}
+      <button
+        onClick={() => navigate(-1)} // Voltar à página anterior
+        className="flex items-center text-purple-800 hover:text-purple-600 mb-6"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6 mr-2"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+        Voltar
+      </button>
 
-      {/* Formulário de envio de notificações */}
-      <div className="bg-gray-50 p-6 rounded-lg shadow-md mb-6">
-        <h4 className="text-2xl font-semibold text-[#4C1D95] mb-4">Enviar Notificação</h4>
-        <div className="space-y-4">
-          {/* Selecione o tipo de notificação */}
-          <div>
-            <label className="block text-lg text-[#4C1D95] mb-2">Tipo de Notificação</label>
-            <select
-              value={notificationType}
-              onChange={(e) => setNotificationType(e.target.value)}
-              className="w-full px-4 py-2 border border-[#4C1D95] rounded-md focus:outline-none focus:ring-2 focus:ring-[#4C1D95]"
-            >
-              <option value="observacao">Observação</option>
-              <option value="evento">Evento Escolar</option>
-            </select>
-          </div>
+      <h1 className="text-3xl font-bold text-purple-900 mb-8 text-center">Gerenciar Notificações</h1>
 
-          {/* Campo de e-mail do aluno */}
-          <div>
-            <label className="block text-lg text-[#4C1D95] mb-2">E-mail do Aluno</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border border-[#4C1D95] rounded-md focus:outline-none focus:ring-2 focus:ring-[#4C1D95]"
-              placeholder="E-mail do aluno"
-            />
-          </div>
-
-          {/* Campo de assunto */}
-          <div>
-            <label className="block text-lg text-[#4C1D95] mb-2">Assunto</label>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Coluna 1: Enviar Notificação */}
+        <div className="bg-white shadow-md rounded-lg p-6">
+          <h2 className="text-xl font-semibold text-purple-700 mb-4">Enviar Notificação</h2>
+          <div className="mb-4">
+            <label className="block text-gray-700 mb-2">Destinatários</label>
             <input
               type="text"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              className="w-full px-4 py-2 border border-[#4C1D95] rounded-md focus:outline-none focus:ring-2 focus:ring-[#4C1D95]"
-              placeholder="Assunto da notificação"
+              placeholder="Ex: Turma A, Aluno específico..."
+              value={destinatarios}
+              onChange={(e) => setDestinatarios(e.target.value)}
+              className="border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
-
-          {/* Campo de mensagem */}
-          <div>
-            <label className="block text-lg text-[#4C1D95] mb-2">Mensagem</label>
+          <div className="mb-4">
+            <label className="block text-gray-700 mb-2">Mensagem</label>
             <textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              rows="5"
-              className="w-full px-4 py-2 border border-[#4C1D95] rounded-md focus:outline-none focus:ring-2 focus:ring-[#4C1D95]"
-              placeholder="Digite a mensagem"
-            ></textarea>
+              placeholder="Digite sua mensagem aqui..."
+              value={mensagem}
+              onChange={(e) => setMensagem(e.target.value)}
+              className="border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-purple-500"
+              rows={5}
+            />
           </div>
-
-          {/* Botão de enviar */}
-          <div className="flex justify-end">
-            <button
-              onClick={handleSendNotification}
-              className="bg-[#4C1D95] text-white px-6 py-2 rounded-md hover:bg-indigo-700 transition"
-            >
-              Enviar Notificação
-            </button>
-          </div>
+          {status && <p className="text-sm text-green-600 mb-4">{status}</p>}
+          <button
+            onClick={handleEnviarNotificacao}
+            className="w-full bg-purple-800 text-white py-3 rounded-lg hover:bg-purple-700 transition"
+          >
+            Enviar
+          </button>
         </div>
-      </div>
 
-      {/* Lista de notificações enviadas */}
-      <div>
-        <h4 className="text-2xl font-semibold text-[#4C1D95] mb-4">Notificações Enviadas</h4>
-        <div className="space-y-4">
-          {sentNotifications.length === 0 ? (
-            <p className="text-lg text-gray-600">Nenhuma notificação enviada ainda.</p>
+        {/* Coluna 2: Histórico de Notificações */}
+        <div className="bg-white shadow-md rounded-lg p-6">
+          <h2 className="text-xl font-semibold text-purple-700 mb-4">Histórico de Notificações</h2>
+          {notificacoes.length > 0 ? (
+            <ul className="divide-y divide-gray-200">
+              {notificacoes.map((notificacao) => (
+                <li
+                  key={notificacao.id}
+                  className="py-4 flex items-start justify-between"
+                >
+                  <div>
+                    <p className="text-sm text-gray-600 mb-1">
+                      <strong>Para:</strong> {notificacao.destinatarios}
+                    </p>
+                    <p className="text-gray-800">{notificacao.mensagem}</p>
+                  </div>
+                  <span
+                    className={`px-3 py-1 text-sm rounded-lg font-medium ${
+                      notificacao.status === 'Lida'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-blue-100 text-blue-800'
+                    }`}
+                  >
+                    {notificacao.status}
+                  </span>
+                </li>
+              ))}
+            </ul>
           ) : (
-            sentNotifications.map((notification, index) => (
-              <div key={index} className="bg-gray-100 p-4 rounded-lg shadow-sm">
-                <div className="flex justify-between">
-                  <h5 className="text-xl font-semibold text-[#4C1D95]">{notification.subject}</h5>
-                  <span className="text-sm text-gray-500">{notification.date}</span>
-                </div>
-                <p className="text-lg text-[#4C1D95] mt-2">{notification.message}</p>
-                <div className="mt-2 text-sm text-gray-600">
-                  <strong>Tipo:</strong> {notification.type === 'observacao' ? 'Observação' : 'Evento Escolar'}
-                </div>
-                <div className="mt-2 text-sm text-gray-600">
-                  <strong>Enviado para:</strong> {notification.email}
-                </div>
-              </div>
-            ))
+            <p className="text-gray-600">Nenhuma notificação enviada ainda.</p>
           )}
         </div>
       </div>

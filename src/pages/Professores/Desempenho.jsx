@@ -1,190 +1,186 @@
-import React, { useState } from 'react';
-import { FaArrowLeft, FaPlus, FaDownload, FaEdit, FaTrash } from 'react-icons/fa'; // Ícones
-import { motion } from 'framer-motion';
-import { Line } from 'react-chartjs-2'; // Gráfico de desempenho
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
-
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+import React, { useState } from "react";
+import { Bar } from "react-chartjs-2";
+import { FaFilePdf, FaPlus, FaEdit, FaArrowLeft, FaUser } from "react-icons/fa";
+import jsPDF from "jspdf";
+import { useNavigate } from "react-router-dom"; // Importação do hook de navegação
+import "chart.js/auto";
 
 const alunosData = [
-  { id: 1, nome: "João Silva", email: "joao@example.com", desempenho: [75, 80, 85, 90, 95] },
-  { id: 2, nome: "Maria Oliveira", email: "maria@example.com", desempenho: [65, 70, 75, 80, 85] },
-  { id: 3, nome: "Carlos Pereira", email: "carlos@example.com", desempenho: [90, 85, 80, 75, 70] },
+  { id: 1, nome: "João Silva", notas: [8, 7, 9, 6] },
+  { id: 2, nome: "Maria Oliveira", notas: [9, 8, 10, 7] },
+  // Outros alunos...
 ];
 
-function Desempenho({ theme }) {
-  const [alunoSelecionado, setAlunoSelecionado] = useState(null);
-  const [notas, setNotas] = useState([]);
-  const [isAddNotasModalOpen, setIsAddNotasModalOpen] = useState(false);
-  const [newNota, setNewNota] = useState('');
-  const [feedbackMessage, setFeedbackMessage] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+export default function Desempenho() {
+  const [selectedAluno, setSelectedAluno] = useState(null);
+  const [novaNota, setNovaNota] = useState("");
+  const [notaEditada, setNotaEditada] = useState(null);
+  const [alunos, setAlunos] = useState(alunosData);
+  const navigate = useNavigate(); // Inicializa o hook
 
-  const fadeInUp = {
-    hidden: { opacity: 0, y: 30 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
+  const handleSelectAluno = (aluno) => {
+    setSelectedAluno(aluno);
   };
 
-  // Função para selecionar um aluno
-  const selecionarAluno = (aluno) => {
-    setAlunoSelecionado(aluno);
+  const handleAddNota = () => {
+    if (!novaNota || isNaN(novaNota)) return;
+    const updatedAlunos = alunos.map((aluno) =>
+      aluno.id === selectedAluno.id
+        ? { ...aluno, notas: [...aluno.notas, parseFloat(novaNota)] }
+        : aluno
+    );
+    setAlunos(updatedAlunos);
+    setNovaNota("");
   };
 
-  // Função para adicionar notas
-  const adicionarNotas = (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    if (newNota) {
-      setTimeout(() => {
-        setNotas([...notas, newNota]);
-        setNewNota('');
-        setIsAddNotasModalOpen(false);
-        setFeedbackMessage('Nota adicionada com sucesso!');
-        setIsLoading(false);
-      }, 1500);
-    } else {
-      setTimeout(() => {
-        setFeedbackMessage('Por favor, insira uma nota válida.');
-        setIsLoading(false);
-      }, 1500);
-    }
+  const handleEditNota = (index) => {
+    if (!notaEditada || isNaN(notaEditada)) return;
+    const updatedAlunos = alunos.map((aluno) => {
+      if (aluno.id === selectedAluno.id) {
+        const updatedNotas = [...aluno.notas];
+        updatedNotas[index] = parseFloat(notaEditada);
+        return { ...aluno, notas: updatedNotas };
+      }
+      return aluno;
+    });
+    setAlunos(updatedAlunos);
+    setNotaEditada("");
   };
 
-  // Dados do gráfico de desempenho
-  const graficoData = alunoSelecionado
+  const generatePDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text(`Relatório de Desempenho - ${selectedAluno.nome}`, 10, 10);
+    doc.setFontSize(12);
+    selectedAluno.notas.forEach((nota, index) => {
+      doc.text(`Avaliação ${index + 1}: ${nota}`, 10, 20 + index * 10);
+    });
+    doc.save(`${selectedAluno.nome}-relatorio.pdf`);
+  };
+
+  const chartData = selectedAluno
     ? {
-        labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai'],
+        labels: selectedAluno.notas.map((_, index) => `Avaliação ${index + 1}`),
         datasets: [
           {
-            label: 'Desempenho',
-            data: alunoSelecionado.desempenho,
-            fill: false,
-            borderColor: '#4c1d95',
-            tension: 0.1,
-            pointRadius: 5,
-            pointHoverRadius: 7,
-            pointBackgroundColor: '#4c1d95',
+            label: "Notas",
+            data: selectedAluno.notas,
+            backgroundColor: "rgba(75, 192, 192, 0.6)",
           },
         ],
       }
-    : {};
+    : null;
 
   return (
-    <div className={`${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-black'} min-h-screen`}>
-      {/* Header com botão de voltar */}
-      <motion.header
-        className="bg-gradient-to-r from-indigo-700 via-indigo-600 to-indigo-500 text-white p-4 fixed w-full top-0 left-0 z-10 shadow-lg"
-        variants={fadeInUp}
-        initial="hidden"
-        animate="visible"
-      >
-        <div className="flex items-center">
-          <button className="text-lg mr-4" onClick={() => window.history.back()}>
-            <FaArrowLeft />
-          </button>
-          <h1 className="text-xl font-bold">Desempenho</h1>
+    <div className="p-6">
+      {/* Ícone de Voltar com React Router DOM */}
+      <div className="flex items-center mb-4">
+        <button
+          onClick={() => navigate("/Dashboard-professor")}
+          className="text-blue-500 hover:text-blue-700 flex items-center"
+        >
+          <FaArrowLeft size={20} className="mr-2" /> Voltar
+        </button>
+      </div>
+
+      <h1 className="text-2xl font-bold mb-4">Desempenho dos Alunos</h1>
+
+      {/* Lista de Alunos */}
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold mb-2">Selecione um Aluno</h2>
+        <div className="flex flex-wrap gap-4">
+          {alunos.map((aluno) => (
+            <button
+              key={aluno.id}
+              onClick={() => handleSelectAluno(aluno)}
+              className={`px-4 py-2 rounded text-white ${
+                selectedAluno?.id === aluno.id ? "bg-blue-600" : "bg-blue-400"
+              } hover:bg-blue-700`}
+            >
+              <FaUser className="inline mr-2" />
+              {aluno.nome}
+            </button>
+          ))}
         </div>
-      </motion.header>
+      </div>
 
-      {/* Main Content */}
-      <motion.main
-        className="pt-20 px-6"
-        variants={fadeInUp}
-        initial="hidden"
-        animate="visible"
-      >
-        {/* Seleção de aluno */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-semibold text-indigo-800">Selecione um Aluno</h2>
-          <div className="flex space-x-4 mt-4">
-            {alunosData.map((aluno) => (
-              <motion.button
-                key={aluno.id}
-                onClick={() => selecionarAluno(aluno)}
-                className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition-all duration-300 ease-in-out transform hover:scale-105"
-                whileHover={{ scale: 1.1 }}
-              >
-                {aluno.nome}
-              </motion.button>
-            ))}
+      {/* Gráfico de Desempenho */}
+      {selectedAluno && (
+        <>
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold mb-4">Gráfico de Desempenho</h2>
+            <Bar data={chartData} />
           </div>
-        </div>
 
-        {/* Exibir gráfico de desempenho */}
-        {alunoSelecionado && (
-          <>
-            <div className="mb-6">
-              <h3 className="text-xl font-semibold text-indigo-800">Desempenho de {alunoSelecionado.nome}</h3>
-              <div className="mt-4 w-full max-w-lg mx-auto">
-                <Line data={graficoData} />
-              </div>
-            </div>
-
-            {/* Cartão de Ações */}
-            <div className="flex space-x-4 mt-6">
-              <motion.button
-                onClick={() => setIsAddNotasModalOpen(true)}
-                className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-all duration-300 ease-in-out transform hover:scale-105"
-                whileHover={{ scale: 1.1 }}
-              >
-                <FaPlus className="mr-2" />
-                Adicionar Notas
-              </motion.button>
-
-              <motion.button
-                onClick={() => alert('Baixar Relatório em PDF')}
-                className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-all duration-300 ease-in-out transform hover:scale-105"
-                whileHover={{ scale: 1.1 }}
-              >
-                <FaDownload className="mr-2" />
-                Visualizar Relatórios
-              </motion.button>
-            </div>
-          </>
-        )}
-
-        {/* Feedback Message */}
-        {feedbackMessage && (
-          <div className={`mt-4 p-4 rounded-lg text-white ${feedbackMessage.includes('sucesso') ? 'bg-green-500' : 'bg-red-500'}`}>
-            {feedbackMessage}
-          </div>
-        )}
-
-        {/* Modal de Adicionar Notas */}
-        {isAddNotasModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-20">
-            <div className="bg-white p-8 rounded-lg shadow-xl w-96 transform transition-all duration-300 ease-in-out">
-              <h2 className="text-xl font-semibold mb-4">Adicionar Nota</h2>
-              <form onSubmit={adicionarNotas}>
-                <input
-                  type="number"
-                  className="w-full p-3 mb-4 border border-gray-300 rounded-md"
-                  placeholder="Nota"
-                  value={newNota}
-                  onChange={(e) => setNewNota(e.target.value)}
-                  min="0"
-                  max="10"
-                />
-                <button
-                  type="submit"
-                  className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-all duration-300 ease-in-out transform hover:scale-105"
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Carregando...' : 'Adicionar Nota'}
-                </button>
-              </form>
+          {/* Adicionar Notas */}
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold mb-2">Adicionar Nova Nota</h2>
+            <div className="flex items-center gap-4">
+              <input
+                type="number"
+                value={novaNota}
+                onChange={(e) => setNovaNota(e.target.value)}
+                placeholder="Insira a nota"
+                className="border border-gray-300 rounded p-2 w-32"
+              />
               <button
-                onClick={() => setIsAddNotasModalOpen(false)}
-                className="mt-4 text-indigo-600 hover:text-indigo-800"
+                onClick={handleAddNota}
+                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
               >
-                Fechar
+                <FaPlus className="inline mr-2" />
+                Adicionar Nota
               </button>
             </div>
           </div>
-        )}
-      </motion.main>
+
+          {/* Editar Notas */}
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold mb-4">Editar Notas</h2>
+            <table className="min-w-full table-auto border-collapse border border-gray-300">
+              <thead>
+                <tr className="bg-gray-800 text-white">
+                  <th className="px-4 py-2 border border-gray-300">Avaliação</th>
+                  <th className="px-4 py-2 border border-gray-300">Nota</th>
+                  <th className="px-4 py-2 border border-gray-300">Editar</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedAluno.notas.map((nota, index) => (
+                  <tr key={index} className="border-b hover:bg-gray-100">
+                    <td className="px-4 py-2">Avaliação {index + 1}</td>
+                    <td className="px-4 py-2">{nota}</td>
+                    <td className="px-4 py-2 text-center">
+                      <input
+                        type="number"
+                        placeholder="Nova Nota"
+                        onChange={(e) => setNotaEditada(e.target.value)}
+                        className="border border-gray-300 rounded p-1 mr-2 w-24"
+                      />
+                      <button
+                        onClick={() => handleEditNota(index)}
+                        className="text-blue-500 hover:text-blue-700"
+                      >
+                        <FaEdit size={18} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Download Relatório */}
+          <div className="mb-6">
+            <button
+              onClick={generatePDF}
+              className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+            >
+              <FaFilePdf className="inline mr-2" />
+              Download Relatório
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
-
-export default Desempenho;

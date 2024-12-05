@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FaTrash, FaUserCheck, FaArrowLeft } from "react-icons/fa";
+import { FaTrash, FaUserCheck, FaEdit, FaArrowLeft } from "react-icons/fa"; // Import do ícone de setinha
 import { Link } from "react-router-dom";
 
 const alunosData = [
@@ -12,8 +12,9 @@ export default function AlunosList() {
   const [alunos, setAlunos] = useState(alunosData);
   const [showForm, setShowForm] = useState(false);
   const [newAluno, setNewAluno] = useState({ nome: "", email: "", dataNascimento: "" });
+  const [editAluno, setEditAluno] = useState(null); // Estado para o aluno sendo editado
   const [search, setSearch] = useState("");
-  const [selectedAluno, setSelectedAluno] = useState(null);  // Estado para aluno selecionado para o modal
+  const [selectedAluno, setSelectedAluno] = useState(null); // Estado para aluno selecionado para o modal
 
   const handleDeleteAluno = (id) => {
     setAlunos(alunos.filter((aluno) => aluno.id !== id));
@@ -30,11 +31,29 @@ export default function AlunosList() {
   };
 
   const handleInputChange = (e) => {
-    setNewAluno({ ...newAluno, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (editAluno) {
+      setEditAluno({ ...editAluno, [name]: value });
+    } else {
+      setNewAluno({ ...newAluno, [name]: value });
+    }
   };
 
   const handleViewProfile = (aluno) => {
-    setSelectedAluno(aluno); // Exibe o modal com as informações do aluno
+    setSelectedAluno(aluno);
+  };
+
+  const handleEditClick = (aluno) => {
+    setEditAluno(aluno);
+  };
+
+  const handleEditSubmit = () => {
+    setAlunos(
+      alunos.map((aluno) =>
+        aluno.id === editAluno.id ? editAluno : aluno
+      )
+    );
+    setEditAluno(null);
   };
 
   const filteredAlunos = alunos.filter((aluno) =>
@@ -44,13 +63,12 @@ export default function AlunosList() {
   return (
     <div className="p-6">
       <div className="flex items-center mb-4">
-        {/* Link de Voltar para a página principal */}
-        <Link to="/Dashboard-professor" className="mr-4 text-blue-500 hover:text-blue-700">
-          <FaArrowLeft size={20} />
-        </Link>
-        <h1 className="text-2xl font-bold">Lista de Alunos</h1>
-      </div>
-
+  {/* Botão de Voltar com ícone de setinha */}
+  <Link to="/Dashboard-professor" className="mr-1 text-blue-500 hover:text-blue-700 flex items-center">
+    <FaArrowLeft size={20} className="mr-2" /> 
+  </Link>
+  <h1 className="text-2xl font-bold">Lista de Alunos</h1>
+</div>
       {/* Botão de Adicionar Aluno */}
       <button
         onClick={handleAddAlunoClick}
@@ -92,10 +110,16 @@ export default function AlunosList() {
                   <FaTrash size={18} />
                 </button>
                 <button
-                  onClick={() => handleViewProfile(aluno)} // Clica no ícone para abrir o modal
+                  onClick={() => handleViewProfile(aluno)}
                   className="text-green-500 hover:text-green-700 mx-2"
                 >
                   <FaUserCheck size={18} />
+                </button>
+                <button
+                  onClick={() => handleEditClick(aluno)}
+                  className="text-blue-500 hover:text-blue-700 mx-2"
+                >
+                  <FaEdit size={18} />
                 </button>
               </td>
             </tr>
@@ -103,14 +127,16 @@ export default function AlunosList() {
         </tbody>
       </table>
 
-      {/* Formulário para Adicionar Aluno */}
-      {showForm && (
+      {/* Formulário para Adicionar ou Editar Aluno */}
+      {(showForm || editAluno) && (
         <div className="mt-6 p-4 border border-gray-300 rounded shadow-md">
-          <h2 className="text-xl mb-4">Adicionar Novo Aluno</h2>
+          <h2 className="text-xl mb-4">
+            {editAluno ? "Editar Aluno" : "Adicionar Novo Aluno"}
+          </h2>
           <input
             type="text"
             name="nome"
-            value={newAluno.nome}
+            value={editAluno ? editAluno.nome : newAluno.nome}
             onChange={handleInputChange}
             placeholder="Nome"
             className="border border-gray-300 rounded p-2 w-full mb-2"
@@ -118,7 +144,7 @@ export default function AlunosList() {
           <input
             type="email"
             name="email"
-            value={newAluno.email}
+            value={editAluno ? editAluno.email : newAluno.email}
             onChange={handleInputChange}
             placeholder="E-mail"
             className="border border-gray-300 rounded p-2 w-full mb-2"
@@ -126,16 +152,16 @@ export default function AlunosList() {
           <input
             type="date"
             name="dataNascimento"
-            value={newAluno.dataNascimento}
+            value={editAluno ? editAluno.dataNascimento : newAluno.dataNascimento}
             onChange={handleInputChange}
             placeholder="Data de Nascimento"
             className="border border-gray-300 rounded p-2 w-full mb-4"
           />
           <button
-            onClick={handleAddAlunoSubmit}
+            onClick={editAluno ? handleEditSubmit : handleAddAlunoSubmit}
             className="bg-green-500 text-white px-4 py-2 w-full rounded hover:bg-green-600"
           >
-            Adicionar Aluno
+            {editAluno ? "Salvar Alterações" : "Adicionar Aluno"}
           </button>
         </div>
       )}
@@ -144,19 +170,13 @@ export default function AlunosList() {
       {selectedAluno && (
         <div className="fixed inset-0 bg-gray-500 bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-            <div className="flex justify-between">
-              {/* Link de Voltar para a página de lista */}
-              <Link to="/" className="text-blue-500 hover:text-blue-700">
-                <FaArrowLeft size={20} />
-              </Link>
-              <h2 className="text-2xl font-bold mb-4">Detalhes do Aluno</h2>
-            </div>
+            <h2 className="text-2xl font-bold mb-4 text-center">Detalhes do Aluno</h2>
             <p><strong>Nome:</strong> {selectedAluno.nome}</p>
             <p><strong>E-mail:</strong> {selectedAluno.email}</p>
             <p><strong>Data de Nascimento:</strong> {selectedAluno.dataNascimento}</p>
             <button
               onClick={() => setSelectedAluno(null)}  // Fecha o modal
-              className="mt-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+              className="mt-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 w-full"
             >
               Fechar
             </button>
